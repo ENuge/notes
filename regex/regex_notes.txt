@@ -1,0 +1,209 @@
+Chapter 1
+
+* - match anything
+. - match any one character
+^ those special characters are called metacharacters, while the normal text characters are called literals.
+
+^ - anchors the match to the start of the line. ^cat only matches if cat is at the beginning of the line.
+$ - anchors the match at the end of the line. cat$ only matches if the line ends with cat.
+
+character class - the stuff in brackets. lets you list the characters you want to allow at that point in the match.
+[ea] matches on either e or a
+gr[ea]y, for instance gets your two grays!
+you can have as many characters as you want in the character class.
+within a character class, a - indicates a range: <H[1-6]> gets <H1>, <H2> etc.
+[0-9] and [a-z] are common ones.
+You can also have multiple ranges like:
+[A-Fa-f0-9].
+You can mix ranges with literals: [0-9A-Z_!.?] matches on all those literals or the ranges specified.
+
+- outside of the character class matches on the normal - character.
+? and . are metacharacters, but only outside of a character class
+
+[^abc] matches any character that isn't listed. So [^1-6] matches on any character that's not 1 to 6
+
+. - matches any character.
+| - means or.
+Bob|Robert would match on Bob or Robert. The subexpressions are then called alternatives. Parentheses can be used to constrain the expression, a la gr(a|e)y, which is equivalent to gr[ae]y, which is equivalent to gray|grey. But NOT equivalent to gr[a|e]y, which matches on |! because it's inside a character class.
+
+(First|1st) [Ss]treet = (Fir|1)st [Ss]treet 
+
+A character class can only match a single character! Each alternative in an alteration is a full-fledged regular expression and can match as such!
+
+-i does case-insensitive search in many tools, like grep. (but isn't actually part of the regular expression language)
+
+\< and \> - metasequences that match the position at the start and end of a word. like ^ and $ but for words.
+
+cat
+shcat
+
+so cat\> would find all words ending in cat.
+
+? - a metacharacter meaning optional, the character it is placed after is optional to appear in the match. ? only applies to the immediately preceding character
+
+July? (fourth|4th|4)
+July? (fourth|4(th)?) --> ? can attach to a parenthesized expression
+? - one or none of the previous
++ - one or more of the preceding item
+* - any number, including none, of the preceding item
+those three are known as quantifiers.
+
+a character class is one unit, it doesn't need parentheses
+
+<HR( +size *= *[0-9]+)? *>
+
+{n,m} quantifier matches between n and m times . so {0,1} is the same as a question mark
+
+backreferencing - match some new text that is the same as some old text matched before. the text inside the last parentheses is remembered for \1, the second to last text in a previous parenthesis for \2, etc. Neat! They're numbered counting open parentheses from the left to the right.
+
+all the metacharacters can be escaped with a backslash, like \.
+
+"([^"]|\")*" -> matches a string with starting/ending quotes, and allows an escaped quote in between: "this \"string\" is okay, I swear"
+
+egrep doesn't care how much is matched, only whether there is a match. optional stuff at the end of a match are useless
+
+If you want the - in a character class to be the literal character and not part of a range, you must put it first.
+
+([10]?[0-9]|2[0-3]):[0-5][0-9] (am|pm)
+
+Chapter 2
+
+Perl derives much of its text handling from awk and sed.
+
+m in Perl means attempt a regex match, while the slashes delimit the regex itself.
+== tests whether two numbers are the same
+eq tests whether two strings are the same
+= assigns a value to a variable
+=~ links a regex search with the target string to be searched
+You can read =~ as "matches", a la if ($reply =~ m/^[0-9]+$/) if the string in $reply matches this regular expression
+
+printf "%.2f C is %.2f F\n", $celsius, $fahrenheit; to display things nicely (or, nicer, at any rate)
+
+Perl uses $1,$2,$3 etc to refer to text matched by the first, second, third etc. parenthesized subexpression. or use \1 inside the same regex
+\t matches a tab, though you can use the actual tab character if you hate the world
+\n is newline, \f ASCII form feed, \b backspace
+
+(?:...) groups but does not capture parentheses to variables, so you can use that to add things after the fact
+
+\b in a character class is a backspace, in Perl it otherwise matches a word boundary (beginning or ending!)
+\s matches any whitespace character
+
+You can add a modifier to Perl regexes, so you get:
+$input =~ m/^([-+]?[0-9]+(\.[0-9]*)?)\s*([CF])$/i (note the i at the end for case insensitivity)
+Other modifiers are /g (global match) and /x (free-form expressions)
+/S - anything not whitespace
+/w - [a-zA-Z0-9_]
+/W - not /w
+/d - [0-9]
+/D - you get the picture...
+
+$var =~ s/regex/replacement/ replaces the text matched by regex with replacement. The replacement can include variables or what not.
+
+/g is a modifier for global match - keep trying to find and match/substitute more matches
+
+$price =~ s/(/./d/d[1-9]?)d*/$1/ Neat! Taking advantage of the parenthesized expressions.
+
+sed -i lets you edit things in place.
+or, perl -p -i -e 's/sysread/read/g' file does the same for every occurrence of the thing in the file!
+/g finds multiple occurrences in the same line
+
+$variable = <> gives you the next line of input when you assign from it to a normal $variable
+
+So you can do something like while ($line = <>) {..}
+
+if ($line =~ m/^Subject: (.*)/i) {
+	$subject = $1;
+} ... neat use of $1!
+
+defined(..) -> bool if defined. Perl supports not to flip bools
+
+there are types of lookarounds.
+lookahead - peeks forward in the text to see if its subexpression can match, and is successful if so
+(?=/d) is successful if a digit comes next
+(?<=/d) is successful at positions with a digit to the left
+Lookaround constructs don't consume text, they aren't included in the match itself. For instance, (?=Jeffrey)Jeff matches the Jeff in Jeffrey, not the entirety of Jeffrey, and does not match Jefferson
+
+You can use lookbehind and lookahead to match a position without any actual text. For instance: s/(?<=/bJeff)(?=s/b)/'/g. That matches the position between the f and s, replacing its nothingness with an apostrophe.
+
+You can use lookahead to match with multiple locations, get all the positions you need your comma at, and insert it there! Whoa!
+So you get: $pop =~ s/(?<=/d)(?=(/d/d/d)+$)\,\g;
+That will add our commas properly, boom!
+
+There's also negative lookahead and negative lookbehind, which are successful when their expressions don't match before/after where we're "looking"
+negative lookbehind: (?<!...)
+negative lookahead: (?!...)
+
+An alternative formulation for /b is:
+((?<!\w)(?=\w))|((?<=\w)(?!\w))
+
+And so to know we've matched to our end of digits we get:
+$text =~ s/(?<=/d)(?=(\d\d\d)+(?!\d))/,/g;
+Boom!
+negative lookahead/behind will match if there's nothing there too, so (?!>\d) CANNOT be replaced with (?=\D), because the latter will not match if there is nothing there
+
+You can also get rid of the lookbehind here:
+$text =~ s/(\d)(?=(\d\d\d)+(?!\d))/$1,/g;
+
+We can't get rid of the lookahead, because then the first match would match the entire string, and so wouldn't be left "unmatched" for the next iteration of /g. So you end up with "281,421906" for instance
+
+undef $/; # Puts us in file-slurp mode
+$text = <>; # Slurps up the first file given on the command line
+
+/m modifier in Perl puts us in enhanced line anchor match mode - so it matches on logical lines in a string, as opposed to actual lines.
+So we get: $text =~ s/^$/<p>/mg;
+
+You can combine modifiers in any order
+
+You have to escape forward-slash delimiters, a la \/
+But you can pick your own delimiter: s!regex!replacement_string!modifiers, or s{regex}{string}modifiers, etc
+
+/x modifier causes most whitespace to be ignored, so you can free-format the expression. it also allows comments with a leading # (note: but not in character classes!)
+/x applies only to the regex, not the replacement string!
+
+You can use negative lookbehind at the end of a regex to make sure your match isn't ending with a particular character, like punctuation at the end of a URL. Then it would match up to the prior character for instance!
+
+qr - converts the specified regex into a regex object, which can be saved to a variable and inserted in another regex.
+
+$ not at the beginning or in a character class is assumed to be for variable interpolation, and otherwise needs to be escaped
+Perl arrays start with @, so that needs to be escaped to not be confused with array interpolation
+
+Perl has a special variable $/ ...smh. But you can use it to set what should be the chunking in regex
+
+Without assigning <> to anything, it is the default for substitution and matching with s/...
+
+\e[7m, \e[m etc are ANSI escape sequences for highlighting...smh
+
+Chapter 4 - The Mechanics of Expression Processing
+
+The leftmost match (or a match, given there can be multiple starting at the same position) always wins with regexes.
+
+The standard quantifiers (?*+) are greedy - they attempt to match as much as they can (until they fail or cause a later part of the regex to fail)
+
+You can use this to your advantage with something like Subject: (.*) to capture all of the text after Subject in that line.
+
+Also, ^.*([0-9][0-9]) finds the last two digits on any line that has two digits! Note that captures the same thing as ^.*([0-9]+) because the match terminates once successful!
+
+Two types: regex-directed NFA and text-directed DFA. The regex-directed NFA matches from the regex. "See if the first bit of the regex matches, then the next, left-to right." So when it comes across an alternation, it sees if the first alternation matches, then sees if the second, then the third. text-directed DFAs are different. It keeps track of possible matches given the current position in the text, so it might try two matching alternations at a given point before moving on to the next point. Basically, text-directed doesn't let you go backwards in the text (which makes sense, given what I know about DFAs-it must try one first, the text-directed has one linear path for each character for each regex, the NFA following the regex can just keep the inherent ambiguity of regex rules because NFAs are nondeterministic and can loop back on themselves or go two ways at one node).
+
+The DFA is deterministic - each character in the target string is checked at most once. The regex-directed NFA can match on that thing a ton of times as the regex dictates. All regexes that match the same target strings run at the same speed in the DFA! Very much not so with the NFA. DFA matching is very fast, very consistent, and very boring.
+
+Greedy quantifiers always first make the attempt to match, lazy quantifiers always first attempt to skip the match. The most recently saved option is the one returned to - LIFO, like a stack.
+
+If you have the text 1234 and regex [0-9]*, you'd save state at just before the 1, end, just after the 1, end, just after the 2, end, etc. it "backtracks" to just after the 4, end of regex, realizes it's done, and that's end of the day.
+
+So, for instance, ".*", due to its greediness will match '"McDonald's" is said "makudonarudo"' in 'The name "McDonald's" is said "makudonarudo" in Japanese'. You can get what you want with "[^"]*", match everything except a quote inside!
+
+We can use negative lookahead to get around the greedy problem in more complex scenarios. Consider replacing .* with ((?!<B>).)*. Each * now only matches if the thing ahead of us is not the character <B>. Combining that with a lazy quantifier can be quite powerful at avoiding over-matching.
+
+An overall match always takes precedence over an overall non-match, greedy or not greedy.
+
+(?>...) if and when matching is able to exit the closing parenthesis, all states that had been saved while in it are thrown away. so there's "no going back" once matched. whatever text was matched by the construct is now kept or given back to the regex as a whole. backtracking won't retry any saved states kept from within the parens. All matches created within the atomic grouping are thrown away. Atomic grouping actually eliminates possible paths
+
+(?>.*?) note *? is the lazy * quantifier. That does nothing, because it'll first lazily skip, the skip is always successful and now we're outside of our atomic grouping without having matched anything
+
+You can use atomic groupings to make your regexes more efficient: (?>\w+): will not try colon on every possible letter match if the outermost one fails, because we know none of those inside skip states will ever match
+
+Possessive quantifiers are like greedy quantifiers combined with atomic grouping - once they match, they don't keep the saved state of skips. Those are: ?+, *+, ++, and {m,n}+ . so for instance (?>\w+) is equivalent to \w++
+
+To be clear, (?>M+) is equal to M++. But NOT (?>M)+, because it throws away just the match by the grouping of just M each time. It's clearer with something bigger:
+(\\"|[^"])*+ != (?>\\" | [^"])* because in the second one you only throw out the events within that particular star match attempt, not all of the events from the *+ in general, as you'd get with (?>(\\" | [^"])*)
