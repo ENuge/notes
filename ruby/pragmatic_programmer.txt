@@ -1,0 +1,497 @@
+Chapter 1
+#{Time.now} -> evaluates the expression put in there, whether
+it's a variable or a full-on expression
+
+:: Is used for namespacing. ie if you have a Module named Foo containing a class named Bar, where Bar has some class variable thing defined in it. You could access that class variable via: Foo::Bar::thing .
+
+Chapter 2
+Creating an object - just call the constructor which by default exists:
+song1 = Song.new("Ruby Tuesday")
+Each object has a unique object identifier (object ID)
+instance variables - variables with values unique to each instance.
+
+Methods are invoked by sending a message to an object, which then looks if it has the method name in that message.
+receiver receives the message.
+You could also say puts(say_goodnight("John-Boy"))
+string literal = "foo" or 'foo'.
+But '' and "" are not equivalent! Double quotes converts special characters to their binary equivalent. Single quotes outputs them exactly as is.
+Also needed for expression interpolation:
+	result = "Good night, #{name}" != 'Good night, #{name}' when printed.
+You can put any sort of expression in #{..} blocks.
+
+Dropping temporary variables and return statements is idiomatic:
+	def say_goodnight(name)
+		"Good night, #{name.capitalize}"
+	end
+	puts say_goodnight('ma')
+
+Global vars: prefix with dollar sign.
+Instance variables: begin with @ sign.
+Class variables: begin with two @ signs (@@)
+Local vars, method params, method names: begin with lowercase letter or underscore.
+Class names, module names, constants: start with uppercase.
+
+Any array or hash can hold objects of differing types.
+Array literal - a set of elements between square brackets.
+%w is an array construction syntactic sugar:
+a = %w{ ant bee cat dog elk} instead of all the brackets and commas
+
+nil is an object that happens to represent nothing.
+
+hashes use => to separate key from value. keys must be unique. keys and values can be arbitrary objects. it'll return nil if that key does not exist.
+
+p - like puts, but displays things like nil explicitly.
+nil is evaluated to false in boolean expressions
+
+You can specify a different default value for a hash by supplying an arg to Hash.new, like freq_counter = Hash.new(0)
+
+Symbols - constant names that you don't have to predeclare and are guaranteed to be unique. :symbol_name
+symbols are frequently used as keys in hashes, just replace the string key with the hash and then index using that symbol too
+There's syntactic sugar for declaring it too:
+hash_thing = {
+	cello: 'string',
+	clarinet: 'woodwind',
+}
+Creates a hash with :cello and :clarinet as symbol keys.
+
+While, if, for loops etc are all terminated by end.
+
+You can use a statement as a condition, because most statements return a value:
+while line = gets
+	...
+end
+
+statement modifiers let you do 1-line conditionals
+
+First-class support for regular expressions. You create 'em by including between slash characters, /pattern/.
+For instance: /Perl|Python/ does as you expect.
+/P(erl|ython)/
+Includes character classes like \w and fun stuff like that.
+
+=~ is the match operator. If pattern is found, =~ returns its starting position. Otherwise, nil. So you can use it as the condition in if and while statements.
+There's also sub and gsub methods on classes to replace one or all matched instances with your text.
+
+Code blocks:
+Can basically pass around arbitrary code expressions. Just chunks of code between braces and/or do/end.
+Braces bind more tightly than do/end blocks (what does that mean??) 
+You can associate blocks with a method call:
+verbose_greet("Dave", "loyal customer") { puts "Hi" }
+That method can then use `yield` (however many times it wants) to invoke that block.
+
+For example:
+2.0.0-p648 :051 > def call_block
+2.0.0-p648 :052?>   puts "Start of method"
+2.0.0-p648 :053?>   yield
+2.0.0-p648 :054?>   yield
+2.0.0-p648 :055?>   puts "End of method"
+2.0.0-p648 :056?>   end
+ => nil 
+2.0.0-p648 :057 > call_block {puts "In the block" }
+Start of method
+In the block
+In the block
+End of method
+ => nil 
+
+ You can provide arguments to the yield call, and they'll be passed to the block. In the block, you specify the params receiving those args between vertical bars. They're kind of like coroutines:
+
+ def who_says_what
+ 	yield("Dave", "hello")
+ 	yield("Andy", "goodbye")
+ end
+who_says_what {|person, phrase| puts "#{person} says #{phrase}"}
+
+Code blocks are used to implement iterators:
+animals = %w(ant bee cat dog)
+animals.each {|ainmal| puts animal }
+
+Some examples:
+5.times {print "*"}
+3.upto(6) {|i| print i}
+('a'..'e').each {|char| print char}  # That's cool!
+
+So you very rarely have to write for or while loops in Ruby, just give it a block.
+
+print - writes its arguments but with no newline.
+printf - outputs arguments under the control of a format string.
+gets - reads input into your program. Returns nil when it reaches the end of input.
+
+ARGV - what you expect, except a global thing.
+ARGF - all the contents of all the files (I guess reads them up-front?)
+
+Chapter 3
+class BookInStock
+	def initialize(isbn, price)
+		@isbn = isbn
+		@price = Float(price)
+	end
+end
+You put init stuff in an initialize method, can take arbitrary number of args.
+@isbn and isbn are totally different variables, the @ is literally part of the former's name. The latter is only scoped locally.
+p - prints out internal representation of object.
+You can override to_s to get a better representation of your object.
+You can then use your instance variables with @, like self. in Python.
+
+No other object can access an object's instance variables - they're private.
+You define methods that allow other objects to manipulate the instance variables - called attributes.
+You can define accessor methods that just return the instance variables.
+And then refer to them outside of your class via ClassName.method which will return your variable.
+
+attr_reader :isbn, :price # provides the accessor methods for you, matching the instance variables corresponding to those symbols
+It doesn't declare them - those instance variables pop into existence at runtime when you use them.
+
+A ruby method whose name ends in an equals sign can be used as the target of assignments - basically, it's your setter:
+def price=(new_price)
+	@price = new_price
+end
+book.price = book.price * 0.75
+
+attr_writer makes an attribute write-only
+attr_accessor gives you standard read-write. Same syntax as attr_reader.
+
+virtual instance variables - create assignment attribute method, you can then assign to it even if it's not a directly-existing underlying variable. For instance:
+def price_in_cents=(cents)
+	@price = cents / 100.0
+end
+book.price_in_cents = 100  # this will store to book.price 1, but it looks like you just stored to book.price_in_cents (which seems like a dubious "feature", to me)
+You can use that to never expose the internals, and always this interface, and then you're free to change the internal instance variables as you see fit. I suppose that actually is pretty neat!
+attributes expose external state. instance variables are internal. methods are other actions you can perform on your class.
+
+You can append to an array with:
+array << item_to_append
+
+Three levels of method access:
+public - can be called by anyone. Methods are public by default, except initialize.
+protected - can be invoked only by objects of the defining class and its subclasses. By any instance of those!
+private - Can only be invoked in the context of the current object.
+Access control is determined dynamically, not statically.
+If used with no args, private/protected/public will protect all methods after that statement in the class definition.
+Or you can explicitly state which is which:
+	public :method1, :method4
+	protected :method2
+	private :method3
+
+A variable in Ruby is not an object - it's just a reference to an object.
+So two variables referencing the same object will be able to modify the other's value. (Just like Python).
+You can use the `dup` method on your object (if it has it) to copy the contents to avoid aliasing.
+You can also freeze an object to prevent some other variable from modifying it.
+person1 = "Tim"
+person2 = person1
+person1.freeze
+# now person2 can't modify "Tim"
+
+The Integer method truncates, it doesn't round.
+
+Chapter 4
+Arrays
+Arrays hold a collection of object references.
+Can create an array via:
+a = [3.14159, "pie", 99]
+b = Array.new
+b[0] = "second"
+b[1] = "array"
+b # => ["second", "array"]
+
+You can assign to a later array value and it'll fill everything in-between with nil:
+a = ["foo", "bar"]
+a[4] = "wee"
+a # => ["foo", "bar", nil, nil, "wee"] 
+
+You can override the indexing operator ([]) in array subclasses.
+Negative indexing works like Python - starts from the end.
+And it gives nil if you go too far in reverse.
+Can also get a range via: array[0::2] (it's inclusive!)
+Can do the same with array[start_value, count] where count is how many to include. It'll only include what's there, not filling the rest out with nils.
+a[1...3] is exclusive on the end value. (three elements total)
+a[1..3] is inclusive (two elements total)
+
+Can also do assignment with lengths:
+a[2,0] = .. # inserts before element 2.
+a[2,2] = 'cat' # replaces element 2 and the thing after it with a single element, cat, at index 2.
+a[1,1] = ["foo", "bar", "baz"] # replaces elements 1,2, and 3 with these values in turn
+a[0..3] = [] # effectively drops the first three numbers
+a[5..6] = 99, 98 # replaces elements 5 and 6 with 99 and 98, respectively.
+
+Funky.
+
+push/pop to add/remove from end of array.
+unshift/shift to add/remoe from head of an array
+first/last return, but don't remove, the n entries at the head or end of an array
+
+Hashes
+hash literals are declared as:
+h = { 'dog' => 'canine', 'cat' => feline', 'donkey' => 'asinine'} # etc
+or (for keys that are symbols)
+h = {dog: 'canine', cat: 'feline', donkey: 'asinine'}
+Hashes are ordered in Ruby! Noice.
+
+String scan - returns an array of substrings that match a given pattern.
+
+Can use `sort_by` on a hash to return a sorted array of arrays (inner arrays are [key, value], sorted by `sort_by`). sort_by is just the value to use, it handles the sorting.
+
+`each` is an iterator - a method that invokes a block of code repeatedly.
+The scope of the block is, by default, the scope of wherever it's instantiated.
+If a variable appears only inside a block, then it is local to that block.
+
+Parameters to a block are always local to that block, even if they have the same name as a local variable outside of the block.
+
+You can also specify block-local variables by putting a semicolon after the parameters to the block in the vertical bar notation:
+square = 5
+[1,2,3,4].each do |value; square|
+...
+end
+# square still equals 5 here
+
+yield returns the last expression evaluated in that yield
+collect = map, then outputs the new array
+f.each.with_index do |line, index|
+	...
+end
+gives you access to the index you're at in the iterator
+`inject` lets you accumulate a value across the members of a collection:
+[1,3,5,7].inject(0) {|sum, element| sum+element} # => 16
+sum is set to the value you pass, element is the first element in the array.
+[1,3,5,7].inject(1) {|product, element| product*element} # => 105
+If inject is supplied with no argument, it uses the first element as the starting value and then begins doing the element operation on the second iteration.
+You can also do: [1,3,5,7].inject(:+) # => 16 . Whoah.
+
+`Enumerator` class implements external iterators when the ones internal to an object aren't good enough.
+a = [1,3, "cat"]
+enum_a = a.to_enum
+enum_a.next # => 1
+etc.
+Can also use external iterators with the loop construct:
+loop do  # terminates when no more next values.
+	puts "#{short_enum.next}"
+end
+`each_with_index` is a nice way to iterate also - can be done on any enumerator.
+You can use enumerators to generate infinite sequences, or yield arbitrary things:
+foo = Enumerator.new do |yielder|
+	loop do
+		..
+		yielder.yield something
+	end
+end
+
+Enumerator::Lazy gets you a lazy enumerator, yay! Each enumerator returns an enumerator that takes from the values preceding it.
+So chained enumerators are then all lazy. So you could do something like:
+p Integer
+	.all
+	.select {|i| (i % 3).zero? }  # This only takes what it needs - it will terminate
+	.first(10)
+
+You can split up your enumerators:
+multiple_of_three = Integer
+	.all
+	.select{ |i| (i % 3).zero? }
+p multiple_of_three.first(10)
+
+m3_palindrome = multiple_of_three.select { |i| palindrome?(i)}
+p m3_palindrome.first(10)
+
+You could also code the various blocks as free-standing named procs:
+multiple_of_three = -> n {n (n % 3).zero? }
+palindrome = -> n { n = n.to_s; n == n.reverse }
+p Integer
+	.all
+	.select(&multiple_of_three)
+	.select(&palindrome)
+	.first(10)
+
+A sample Python-esque yield:
+class File
+	def self.open_and_process(*args)  # Note *args is a thing!
+		f = File.open(*args)
+		yield f
+		f.close()
+	end
+end
+
+File.open_and_process("testfile", "r") do |file|
+	while line = file.gets
+		puts line
+	end
+end
+
+Note that `open_and_process` is a class method - it's not called on a particular instance.
+
+`block_given?` - returns true if a block is associated with the currently-called method.
+
+Blocks Are Objects
+You can store them in variables, pass them around, and invoke their code later.
+If last param in method is prefixed with ampersand (&), Ruby looks for a code block whenever that method is called. It's converted to an instance of class Proc and assigned to the parameter (can then use .call(..) on it).
+Used to implement callbacks, dispatch tables, etc.
+Can get a Proc object out of a block using lambda and Proc.new:
+drake_device = lambda { |param| puts "You used to call me on my #{device}" }
+drake_device.call "cell phone"
+drake_device.call "rotary phone"
+
+Closure - variables in the surrounding scope that are referenced in a block remain accessible for the life of that block and the life of any Proc object created from that block!
+For instance:
+def n_times(thing)
+	lambda {|n| thing * n}
+end
+p1 = n_times(23)
+p1.call(3) # => 69
+p1.call(4) # => 92
+
+Or can be used to create a generator:
+def power_proc_generator
+	value = 1
+	lambda {value += value }
+end
+power_proc = power_proc_generator
+puts power_proc.call # => 2
+puts power_proc.call # => 4
+puts power_proc.call # => 8
+
+Alternative notation:
+proc1 = -> arg { puts "In proc1 with #{arg}" }
+
+You could reinvent the while loop as such:
+def my_while(cond, &body)
+	while cond.call
+		body.call
+	end
+end
+
+a = 0
+
+my_while -> {a < 3 } do
+	puts a
+	a += 1
+end
+
+Chapter 5 - Inheritance, Modules, Mixins
+Subclassing a parent class:
+class Foo < Bar # (Foo inherits from Bar)
+
+Object.superclass # => BasicObject
+Everything inherits from Object, which inherits from BasicObject.
+(BasicObject is used for some metaprogramming, acting as a blank canvas.)
+
+You need to call super explicitly if you also need the superclass's initialize method.
+
+Modules
+- provide a namespace and prevent name clashes
+- support the mixin facility
+
+:: - the scope resolution operator.
+You reference a constant in a module via ModuleName::CONSTANT
+Modules provide mixins. You can `include` them in other classes.
+Must still use require to have the file included in your own.
+include does not copy the methods over - it includes a reference to the other module. So if you change that module at runtime, it'll reflect the updated changes.
+
+@age directly accesses the instance variable age, self.age tells the object to send itself the message `age`, which is usually just the instance variable, but could be modified by any subclasses that muck with age.
+
+Ruby - single-inheritance but with mixins.
+Can include Enumerable if you implement `each`.
+
+Mixins can add instance variables the same way a class would - with the @ syntax. But they exist in the same namespace as the underlying class. They can also access the class's underlying accessors. So the mixin has to handle the namespacing to make sure they don't clash. 
+A mixin that requires its own state should be written as a class.
+
+For methods, the order of lookup is:
+- immediate class
+- mixins included in that class (the last one included is searched first)
+- superclasses and their mixins
+
+Classes should still follow the "is a" relationship - they can do everything the superclass can do.
+
+Inheritance by itself makes it very difficult to change superclasses in the future, because they're being used by god-knows-who down the inheritance chain. That's why he proposes object references in classes, mixins, and metaprogramming.
+
+Standard Types
+A standard integer is either a Fixnum or if it gets big enough a Bignum.
+Underscore ignored in numbers.
+Can prefix with 0 (octal), 0d (decimal), 0x (hex), or 0b (binary).
+Decimal points must be followed by a digit (1.0e3, not 1.e3).
+
+Rational(3, 4) * Rational(2, 3) # => (1/2)
+Rational("3/4") * Rational("2/3") # => (1/2)
+Complex(1, 2) * Complex(3, 4)  # => (-5+10i)
+
+By default, integer division returns an integer:
+1 / 2 # => 0
+`mathn` library will have it work as expected.
+
+You can omit the braces in string interpolation for global, class, or instance variables: "Safe #SAFE".
+Interpolated code can be one or more statements, not just an expression!
+Can also use % any-delimiter string: %!my string!
+
+here document:
+string = <<-END_OF_STRING
+blah blah blah
+	END_OF_STRING
+
+Can even have multiple on the same line!
+Default encoding = UTF-8
+Can override it for all strings in a file: #encoding: utf-8
+
+Song = Struct.new(:title, :name, :length)
+squeeze - trims runs of repeated characters.
+`scan`-like `split`s opposite, splits on values that match that pattern
+
+.. and ... range operators create sequences. .. - inclusive, ... - exclusive
+1..10 for instance.
+1..10.to_a for instance
+
+<=> returns -1, 0, or 1 depending on whether the first value is less than, equal to, or greater than the second
+Ranges as conditions - can do something that succeeds as long as the first condition is true up until the second one is true:
+while line = gets
+	puts line if line =~ /start .. line =~ /end/
+end
+
+(1..10) === 5 # => true - as an interval test
+Or use them in case statements
+
+Regular Expressions
+/foo/ is a regex literal - can use #{} expression substitions in the pattern
+\ for escaping.
+=~ matches a string against a pattern, returning the offset into the string where the match occurred:
+/cat/ =~ "catch" # => 0
+(or): "catch" =~ /cat/ # => 0
+Can be used in if conditions
+!~ for not matching
+sub = single instance substitution
+gsub = global substitution
+
+More about Methods
+predicate methods - return a boolean result
+bang methods - end in !, either dangerous or modify their receiver
+methods that can appear on left side of assignment end with an equal sign
+default args can be specified like so:
+def cool_dude(arg1="Miles", arg2="Davis") # etc. 
+And they can reference previous args:
+def surround(word, pad_width=word.length/2)
+
+Splatting an argument - put a star on the last arg, all subsequent args are passed as an array.
+`super` with no params passes all params to the superclass
+Can leave off the name of the arg if you wish:
+def do_something(*)
+	# our stuff
+	super
+end
+
+Can put the splat arg anywhere in a method's param list.
+Can't put args with defaults after the splat.
+&block lets you store the block as a Proc to be used/referenced later:
+def initialize(name, &block)
+	@name, @block = name, block
+end
+
+Omitting the receiver defaults to self, the current object.
+`return` with multiple params returns the parameters in an array
+Can then use parallel assignment on them:
+num, square = meth_three
+
+Can use splat args in reverse, unpacking the array or enum and passing those args separately.
+
+Can also pass ampersanded procs, which will be handled as a block:
+puts((1..10).collect(&calc)  # => calc will be handled as the block to collect.
+
+Can do key-value args without braces, which will be collected together into a single hash and passed as one argument. Must follow normal args and precede any splat and block args:
+list.search(:titles, genre: "jazz", duration_less_than: 270)  # for instance
+
+Can also match those against keyword arguments.
+Can also have a double splat, just like Python.
+
+Expressions
