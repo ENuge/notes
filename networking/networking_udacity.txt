@@ -1,0 +1,167 @@
+If nothing is listening on the port, it will send back a reset packet, closing the connection.
+
+A plain TCP server would be one level below a web server - there's no HTTP happening, it's just sending text back and forth.
+
+tcp is like a two-way road, can send back and forth. Both sides can send back and forth at the same time.
+
+^D - standard unix signal for "end of input".
+
+ 302 Found is a way to do URL redirection - basically, you tell them to go to the Location in the Header instead of what they originally requested.
+
+ HEAD asks for just the headers for the response, a new HTTP verb to go with GET/PUT/POST/DELETE.
+
+80 - http
+443 - https
+22 - ssh
+
+A normal non-root user can listen on 1024-65535.
+A root user can listen on ports down to 1.
+
+Only one program can listen on a given port at a time.
+But it can run threads or child processes that run on a port, or loop repeatedly. Which is what web servers do!
+
+lsof - lists open files, including network sockets (listening or connected!)
+
+lsof -i lists only network sockets
+
+Names and Addresses
+
+IP Addresses designate a particular destination on the Internet.
+
+Every packet has the IP address of the machine it came from and the machine it's going to.
+
+DNS does hostname->IP address. DNS stores a ton of records, the main one of interest is the A-Record, A for address. Goes name->ipv4address. The browser does DNS resolution. 
+
+A site owner has to register the domain name with a registrar. 
+
+DNS records are part of the security mechanisms for SSL encryption and cookie something. The resolver is DNS client code built into every operating system.
+
+host - looks up records in DNS.
+
+dig - gets the same data as host, but in a format more similar to what a DNS record would actually hold. so it's more scriptable.
+
+Some record types:
+CNAME - canonical name - used to alias one name with another
+AAAA - IPv6 address (because v6 records are four times longer than A records!)
+NS - DNS name server - what DNS servers have the records for a given domain.
+
+root servers direct requests to TLD servers, which direct to certain domains.
+the nameserver for google.com would be in the nameserver for .com, which is a gTLD (a global TLD server), their NS records are in the root servers.
+This is cached by local servers to make things faster. If the cache doesn't have it, it tries the root server, then the TLD server, then at the lower level domain until it eventually gets an answer.
+
+DNS records have a TTL. After it expires, caching servers have to go back to the root server to make sure the information is correct.
+
+You have to send the host name in an HTTP request so it knows who to talk to, what Apache calls virtual hosts or nginx's multiple server blocks. 
+
+Cookies are set for a particular domain name. SSL encryption certs are also issued for particular domains. SSL encrypts the data sent outwards from your client, so nobody can MITM and read your stuff. Also, only the receiving server will have the right SSL cert, so you can be confident you're talking to the right person and not getting MITM'ed through that.
+
+www.example.com is a subdomain of example.com
+test.www.example.com is a subdomain of www.example.com, etc.
+
+Most sites alias www.site.com to site.com, so www.site.com is just a CNAME for site.com. Because most sites serve only web traffic. Yelp redirects you out one, like Udacity. github just leaves you at github.com. Interesting!
+
+you can have a search domain, so it'll first look up names in that domain, say www.example.edu, and then look up in the global DNS records. That's probably how y/ links work at Yelp somehow, it adds a search domain y/ on our VPN...?
+
+The DNS registrar stuff is shockingly easy, wow. Just point your dev server's IP at the domain and voila! You're done.
+
+Addressing and Networks
+
+not all 32 bit values in IPv4 are used for internet addresses - some are used for special internet protocols. some for internal private networks. or testing or documentation. more than 1/8th are set aside!
+
+an octet's an 8bit value, 0-255. 4octets get your 32 bit address, hence the dotted quad notation.
+
+All addresses on a particular network block share the same prefix - they all start the same and only differ after some bit position. Computers on the same network block can communicate without going through a router.
+
+Networks are of different sizes, so you need to know the network prefix and the length of that prefix. A longer prefix denotes a smaller network (less bits of entropy to designate all the computers on that network).
+
+/24 says you have a 24-bit network prefix, leaving 8 bits for particular hosts. If you lay the bits out, you'd have that much left to designate the individual hosts. So you can't tell by looking at octets whether you have a 22 or 24 bit prefix.
+
+How they're configured let's the computer know if it can talk to another computer directly, or through a router, so it's important shit.
+
+A subnet mask - a binary number of 1s on the left and zeros on the right to indicate the size of the network. They're usually written as dotted quads. So /24 in a subnet mask is 255.255.255.0. Some spell it out in hexadecimal instead of decimal. Making it ff,ff,ff,00.
+
+packets have IP addresses of packets with source and destination. 
+
+IP addresses belong to interfaces of hosts, each host can have multiple interfaces, each with its own addresses. Each machine has a loopback interface for talking to itself.
+
+LOOPBACK is localhost. Lets computers use network to talk to local things, fancy.
+
+LAN - connects your devices.
+WAN - connects to outside world.
+
+default gateway - a router connected towards the rest of the internet. Each router will then have two or more IPs. Local networks can send data to each other without going through another network. Your default gateway may have its own default gateway, and on and on.
+
+Eventually you reach the defaultless part, where routers on major transit ISPs know about the global routing table, the directory of all public IP networks.
+
+All devices on your local network get the same IP address, so to the outside world they need to look like one machine with one address. And then the router assigns to each device a private IP address.
+
+Private IP addresses come from one of 3 IP address netblocks, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, and 192.168.0.0/24, generally the default gateway is 192.168.0.1. 
+
+Used with NAT - Network Address Translation. The router translates which inside addresses and ports are connected to which outside addresses and ports. So everything goes through the router, which then...routes it.
+
+NAT makes it hard to run servers from home - incoming connections to you, as opposed to the other way around. The computer doesn't actually know its own address, so it can't tell other things to send to that address (without hacks).
+
+The actual public network shouldn't see or use private IP addresses for anything, so it's your router that knows your actual public IP address. 
+
+IPv6 = 128 bits, compared to IPv4's 32. 16 octets is a huge amount of possibilities!!
+
+IPv6 - 4 hex characters (so 2 bytes) separated by colons, with two sets that are usually all 0s generally left out for brevity if possible.
+
+So no more need for NAT! 
+
+
+TCP - lets two programs connect and send messages back and forth. TCP is the middle layer of a stack of networking protocols - HTTP->TCP->IP->Hardware. 
+
+HTTP - URLs, resources, verbs, cookies.
+TCP - ports, sessions, stream sockets. 
+IP - delivers packets, IP addresses.
+
+SSH uses TCP. DNS and NTP uses UDP. 
+
+All underlying protocols provided by OS.
+
+tcpdump can monitor traffic to/from a port for any network application.
+DNS - uses port 53. for instance `tcpdump -n port 53'
+
+In TCP, before the client and server can set up the connection, they've got some talking to do. That's all these length 0 requests. 
+
+At TCP layer, client has to send the server a message first with its IP address and port number.
+TCP also keeps track of the data that's been sent, and makes sure that the other end has received it. And makes sure it sees the data in order, even if the underlying network reorders the packets. Each packet has a sequence number on it. Each endpoint sends an acknowledgment when it's received a particular sequence number, and if a packet goes missing the other endpoint will notice it hasn't gotten an acknowledgment and resend it.
+When the client sends the actual request, the server acknowledges that request even before it sends its response. Ack says the number it's received up to but not including.
+
+A flag is set if its value is 1. It's unset or cleared if it's 0. And the flags:
+SYN (synchronize) [S] — This packet is opening a new TCP session and contains a new initial sequence number.
+FIN (finish) [F] — This packet is used to close a TCP session normally. The sender is saying that they are finished sending, but they can still receive data from the other endpoint.
+PSH (push) [P] — This packet is the end of a chunk of application data, such as an HTTP request.
+RST (reset) [R] — This packet is a TCP error message; the sender has a problem and wants to reset (abandon) the session.
+ACK (acknowledge) [.] — This packet acknowledges that its sender has received data from the other endpoint. Almost every packet except the first SYN will have the ACK flag set.
+URG (urgent) [U] — This packet contains data that needs to be delivered to the application out-of-order. Not used in HTTP or most other current applications.
+
+[S.] woud thus be ack'ing the initial synchronization (and also settings its randomized sequence number - each endpoint has a randomized sequence number they start with). An [S.] gets a [.] back to ack the SYN|ack. [S]->[S.]->[.] is the TCP three-way handshake.
+
+And there's a four-way teardown. The client sends an [F], which gets an [F.], then the server sends an [F] when it's done sending, which gets an [F.]. All TCP packets except the initial [S] will ack everything sent so far, so the ack is super common.
+
+Saturated link - completely full - like a traffic jam. You get packet loss because of an uneven network topology. There's a bottleneck somewhere and things get held up, and the router can't just accumulate all of that stuff that needs to be sent through.
+
+TCP starts slowly, increasing speed when it sees the other end can ack them at a reasonable speed. If packets are dropped, it slows down and then gradually speeds back up again. Routers drop packets if the link they're trying to send on is too busy. You get close to an optimal speed as a result. Dropped packets signal congestion! Called TCP Congestion Control.
+
+DNS doesn't use TCP, duh.
+
+Each forward from one router to another is called a hop. traceroute lets you see all the hops.
+
+ping tells roundtrip time - how long since it sent that packet and received a response
+
+Each packet has a TTL - a time to live number that starts large and is reduced by one each time it hits a new router. A router sends an error back to the original host with its address to know where it died. 
+
+The bandwidth is the minimum of the links across the network (quite obviously). But also, the sum of all the slow computers trying to access your network will probably be faster than the (really fast) speed within your datacenter. 
+
+Latency and bandwidth can both make things slow, in different ways.
+
+Bandwith (bits/sec) x latency (seconds) tells you the maximum number of bits that can exist along the network link at any moment. Because bandwidth is like the flow rate and latency is how long something takes to go the length of the tube.
+
+firewalls filter traffic coming into or leaving a network.
+middleboxes - inspect, modify, or filter network traffic. (But only if it's a physical device)
+
+You can use user login credentials or session cookies to determine different users that have the same public IP address.
+
+SSL is the predecessor to TLS.
